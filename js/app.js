@@ -1,289 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeSync Pro - Complete Payment</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- QR Code Library - Using a more reliable CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <span class="logo-icon">📈</span>
-                <h1>TradeSync Pro</h1>
-            </div>
-        </header>
+/**
+ * TradeSync Pro Payment Page - API Client
+ */
 
-        <!-- Progress Steps -->
-        <div class="progress-bar">
-            <div class="step completed">
-                <div class="step-number">✓</div>
-                <span>Select Plan</span>
-            </div>
-            <div class="step completed">
-                <div class="step-number">✓</div>
-                <span>Your Details</span>
-            </div>
-            <div class="step active">
-                <div class="step-number">3</div>
-                <span>Payment</span>
-            </div>
-        </div>
+const API_BASE_URL = 'https://tradesync-license-server-production.up.railway.app';
 
-        <!-- Payment Details -->
-        <main class="main-content">
-            <div class="payment-container">
-                <!-- Timer -->
-                <div class="timer-box">
-                    <span class="timer-icon">⏰</span>
-                    <span>Order expires in: </span>
-                    <span id="countdown" class="countdown">30:00</span>
-                </div>
-
-                <!-- Order Info -->
-                <div class="order-info-box">
-                    <div class="order-id">
-                        Order ID: <strong id="orderId">-</strong>
-                    </div>
-                </div>
-
-                <!-- Payment Instructions -->
-                <div class="payment-section">
-                    <h2 class="section-title">Send Payment</h2>
-                    
-                    <div class="amount-display">
-                        <span class="amount-label">Send exactly:</span>
-                        <div class="amount-value">
-                            <span id="paymentAmount">-</span>
-                            <span class="amount-currency">USDT</span>
-                        </div>
-                        <button class="copy-btn" onclick="copyAmount()">📋 Copy Amount</button>
-                    </div>
-
-                    <div class="network-badge" id="networkBadge">
-                        <!-- Network will be displayed here -->
-                    </div>
-
-                    <!-- QR Code -->
-                    <div class="qr-container">
-                        <div id="qrCode"></div>
-                        <p class="qr-hint">Scan with your wallet app</p>
-                    </div>
-
-                    <!-- Wallet Address -->
-                    <div class="wallet-address-box">
-                        <label>Wallet Address:</label>
-                        <div class="address-container">
-                            <code id="walletAddress">-</code>
-                            <button class="copy-btn" onclick="copyAddress()">📋 Copy</button>
-                        </div>
-                    </div>
-
-                    <!-- Important Notes -->
-                    <div class="warning-box">
-                        <h4>⚠️ Important:</h4>
-                        <ul>
-                            <li>Send <strong>exactly</strong> the amount shown above</li>
-                            <li>Use only <strong id="networkWarning">-</strong> network</li>
-                            <li>Payment must be received within 30 minutes</li>
-                            <li>Your activation key will be emailed after confirmation</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Status Check -->
-                <div class="status-section">
-                    <div id="statusMessage" class="status-pending">
-                        <span class="status-icon">⏳</span>
-                        <span>Waiting for payment...</span>
-                    </div>
-                    <button class="btn btn-secondary" onclick="checkStatus()">
-                        🔄 Check Payment Status
-                    </button>
-                </div>
-
-                <!-- Support -->
-                <div class="support-box">
-                    <p>Need help? Save your Order ID: <strong id="orderIdCopy">-</strong></p>
-                    <p>Contact: <a href="mailto:sardarali95@outlook.com">sardarali95@outlook.com</a></p>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="js/app.js"></script>
-    <script>
-        // Get order from session
-        const order = JSON.parse(sessionStorage.getItem('currentOrder'));
-        if (!order) {
-            window.location.href = 'index.html';
+const PaymentAPI = {
+    /**
+     * Get payment info (wallet addresses, plans, etc.)
+     */
+    async getPaymentInfo() {
+        const response = await fetch(`${API_BASE_URL}/api/payment/info`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch payment info');
         }
+        return response.json();
+    },
 
-        // Display order details
-        document.getElementById('orderId').textContent = order.orderId;
-        document.getElementById('orderIdCopy').textContent = order.orderId;
-        document.getElementById('paymentAmount').textContent = order.amount;
-        document.getElementById('walletAddress').textContent = order.walletAddress;
-        document.getElementById('networkBadge').innerHTML = `
-            <span class="badge ${order.paymentNetwork.toLowerCase()}">${order.paymentNetwork}</span>
-        `;
-        document.getElementById('networkWarning').textContent = `USDT-${order.paymentNetwork}`;
+    /**
+     * Create a new payment order
+     */
+    async createOrder(orderData) {
+        const response = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData),
+        });
 
-        // Generate QR Code using qrcodejs library
-        function generateQRCode() {
-            const qrContainer = document.getElementById('qrCode');
-            qrContainer.innerHTML = ''; // Clear any existing content
-            
-            try {
-                // Create QR code with the wallet address
-                new QRCode(qrContainer, {
-                    text: order.walletAddress,
-                    width: 200,
-                    height: 200,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                console.log('QR Code generated successfully for:', order.walletAddress);
-            } catch (error) {
-                console.error('QR Code generation failed:', error);
-                // Fallback: Show address as text if QR fails
-                qrContainer.innerHTML = `
-                    <div style="padding: 20px; background: #fee2e2; border-radius: 8px; color: #991b1b;">
-                        <p>QR Code unavailable</p>
-                        <p style="font-size: 12px; margin-top: 8px;">Please copy the wallet address below</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Generate QR code after DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', generateQRCode);
-        } else {
-            // Small delay to ensure the library is loaded
-            setTimeout(generateQRCode, 100);
-        }
-
-        // Countdown timer
-        let expiresAt = new Date(order.expiresAt);
+        const data = await response.json();
         
-        function updateCountdown() {
-            const now = new Date();
-            const diff = expiresAt - now;
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to create order');
+        }
 
-            if (diff <= 0) {
-                document.getElementById('countdown').textContent = 'EXPIRED';
-                document.getElementById('countdown').classList.add('expired');
-                document.getElementById('statusMessage').innerHTML = `
-                    <span class="status-icon">❌</span>
-                    <span>Order expired. Please create a new order.</span>
-                `;
-                document.getElementById('statusMessage').className = 'status-expired';
-                return;
+        return data;
+    },
+
+    /**
+     * Check order status
+     */
+    async checkOrder(orderId) {
+        const response = await fetch(`${API_BASE_URL}/api/payment/check/${orderId}`);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                return { found: false, message: 'Order not found' };
             }
-
-            const minutes = Math.floor(diff / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-            document.getElementById('countdown').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-            // Warning when less than 5 minutes
-            if (minutes < 5) {
-                document.getElementById('countdown').classList.add('warning');
-            }
+            throw new Error('Failed to check order status');
         }
 
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
+        return response.json();
+    }
+};
 
-        // Auto-check status every 30 seconds
-        setInterval(checkStatus, 30000);
+// Utility functions
+const Utils = {
+    /**
+     * Format date to local string
+     */
+    formatDate(dateString) {
+        return new Date(dateString).toLocaleString();
+    },
 
-        // Copy functions
-        function copyAmount() {
-            navigator.clipboard.writeText(order.amount.toString()).then(() => {
-                showToast('Amount copied!');
-            }).catch(() => {
-                // Fallback for older browsers
-                fallbackCopy(order.amount.toString());
-                showToast('Amount copied!');
-            });
+    /**
+     * Copy text to clipboard
+     */
+    async copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            return false;
         }
+    },
 
-        function copyAddress() {
-            navigator.clipboard.writeText(order.walletAddress).then(() => {
-                showToast('Address copied!');
-            }).catch(() => {
-                // Fallback for older browsers
-                fallbackCopy(order.walletAddress);
-                showToast('Address copied!');
-            });
-        }
+    /**
+     * Show toast notification
+     */
+    showToast(message, duration = 2000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+    }
+};
 
-        // Fallback copy function for older browsers
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-        }
-
-        function showToast(message) {
-            // Remove existing toast if any
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
-        }
-
-        // Check payment status
-        async function checkStatus() {
-            try {
-                const status = await PaymentAPI.checkOrder(order.orderId);
-                
-                if (status.status === 'confirmed') {
-                    document.getElementById('statusMessage').innerHTML = `
-                        <span class="status-icon">✅</span>
-                        <span>Payment confirmed! Check your email for the activation key.</span>
-                    `;
-                    document.getElementById('statusMessage').className = 'status-confirmed';
-                    
-                    // Redirect to success page
-                    sessionStorage.setItem('orderStatus', JSON.stringify(status));
-                    setTimeout(() => {
-                        window.location.href = 'status.html';
-                    }, 2000);
-                } else if (status.status === 'expired') {
-                    document.getElementById('statusMessage').innerHTML = `
-                        <span class="status-icon">❌</span>
-                        <span>Order expired. Please create a new order.</span>
-                    `;
-                    document.getElementById('statusMessage').className = 'status-expired';
-                } else {
-                    // Still pending
-                    showToast('Still waiting for payment...');
-                }
-            } catch (error) {
-                console.error('Status check failed:', error);
-                showToast('Could not check status. Try again.');
-            }
-        }
-    </script>
-</body>
-</html>
+// Export for use in pages
+window.PaymentAPI = PaymentAPI;
+window.Utils = Utils;
