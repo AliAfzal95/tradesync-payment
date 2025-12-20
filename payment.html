@@ -6,8 +6,6 @@
     <title>TradeSync Pro - Complete Payment</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- QR Code Library - Using a more reliable CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -69,9 +67,9 @@
                         <!-- Network will be displayed here -->
                     </div>
 
-                    <!-- QR Code -->
+                    <!-- QR Code - Using Google Charts API (most reliable) -->
                     <div class="qr-container">
-                        <div id="qrCode"></div>
+                        <img id="qrCodeImage" alt="QR Code" style="width: 200px; height: 200px;">
                         <p class="qr-hint">Scan with your wallet app</p>
                     </div>
 
@@ -118,64 +116,80 @@
 
     <script src="js/app.js"></script>
     <script>
+        // Debug: Log what's in sessionStorage
+        console.log('Session storage currentOrder:', sessionStorage.getItem('currentOrder'));
+        
         // Get order from session
-        const order = JSON.parse(sessionStorage.getItem('currentOrder'));
-        if (!order) {
+        const orderData = sessionStorage.getItem('currentOrder');
+        if (!orderData) {
+            console.error('No order data found in session storage');
+            alert('No order found. Redirecting to home page.');
             window.location.href = 'index.html';
         }
 
-        // Display order details
-        document.getElementById('orderId').textContent = order.orderId;
-        document.getElementById('orderIdCopy').textContent = order.orderId;
-        document.getElementById('paymentAmount').textContent = order.amount;
-        document.getElementById('walletAddress').textContent = order.walletAddress;
-        document.getElementById('networkBadge').innerHTML = `
-            <span class="badge ${order.paymentNetwork.toLowerCase()}">${order.paymentNetwork}</span>
-        `;
-        document.getElementById('networkWarning').textContent = `USDT-${order.paymentNetwork}`;
+        let order;
+        try {
+            order = JSON.parse(orderData);
+            console.log('Parsed order:', order);
+        } catch (e) {
+            console.error('Failed to parse order data:', e);
+            window.location.href = 'index.html';
+        }
 
-        // Generate QR Code using qrcodejs library
+        // Get values with fallbacks for different naming conventions
+        const orderId = order.orderId || order.OrderId || '-';
+        const amount = order.amount || order.Amount || order.uniqueAmount || order.UniqueAmount || '-';
+        const walletAddress = order.walletAddress || order.WalletAddress || '-';
+        const network = order.paymentNetwork || order.PaymentNetwork || 'TRC20';
+        const expiresAt = order.expiresAt || order.ExpiresAt;
+
+        console.log('Order details:', { orderId, amount, walletAddress, network, expiresAt });
+
+        // Display order details
+        document.getElementById('orderId').textContent = orderId;
+        document.getElementById('orderIdCopy').textContent = orderId;
+        document.getElementById('paymentAmount').textContent = amount;
+        document.getElementById('walletAddress').textContent = walletAddress;
+        document.getElementById('networkBadge').innerHTML = `
+            <span class="badge ${network.toLowerCase()}">${network}</span>
+        `;
+        document.getElementById('networkWarning').textContent = `USDT-${network}`;
+
+        // Generate QR Code using Google Charts API (most reliable, no library needed)
         function generateQRCode() {
-            const qrContainer = document.getElementById('qrCode');
-            qrContainer.innerHTML = ''; // Clear any existing content
-            
-            try {
-                // Create QR code with the wallet address
-                new QRCode(qrContainer, {
-                    text: order.walletAddress,
-                    width: 200,
-                    height: 200,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                console.log('QR Code generated successfully for:', order.walletAddress);
-            } catch (error) {
-                console.error('QR Code generation failed:', error);
-                // Fallback: Show address as text if QR fails
-                qrContainer.innerHTML = `
-                    <div style="padding: 20px; background: #fee2e2; border-radius: 8px; color: #991b1b;">
-                        <p>QR Code unavailable</p>
-                        <p style="font-size: 12px; margin-top: 8px;">Please copy the wallet address below</p>
-                    </div>
-                `;
+            if (walletAddress && walletAddress !== '-') {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(walletAddress)}`;
+                const qrImage = document.getElementById('qrCodeImage');
+                qrImage.src = qrUrl;
+                qrImage.onerror = function() {
+                    // Fallback to another QR service
+                    this.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(walletAddress)}&choe=UTF-8`;
+                    this.onerror = function() {
+                        // If both fail, show message
+                        this.style.display = 'none';
+                        this.parentElement.innerHTML = `
+                            <div style="padding: 20px; background: #f3f4f6; border-radius: 8px;">
+                                <p style="color: #6b7280;">QR Code unavailable</p>
+                                <p style="font-size: 12px; color: #9ca3af;">Please copy the wallet address below</p>
+                            </div>
+                        `;
+                    };
+                };
+                console.log('QR Code URL:', qrUrl);
+            } else {
+                console.error('No wallet address for QR code');
             }
         }
 
-        // Generate QR code after DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', generateQRCode);
-        } else {
-            // Small delay to ensure the library is loaded
-            setTimeout(generateQRCode, 100);
-        }
+        // Generate QR code
+        generateQRCode();
 
         // Countdown timer
-        let expiresAt = new Date(order.expiresAt);
+        let expiresAtDate = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 30 * 60 * 1000);
         
         function updateCountdown() {
             const now = new Date();
-            const diff = expiresAt - now;
+            const diff = expiresAtDate - now;
 
             if (diff <= 0) {
                 document.getElementById('countdown').textContent = 'EXPIRED';
@@ -207,23 +221,26 @@
 
         // Copy functions
         function copyAmount() {
-            navigator.clipboard.writeText(order.amount.toString()).then(() => {
-                showToast('Amount copied!');
-            }).catch(() => {
-                // Fallback for older browsers
-                fallbackCopy(order.amount.toString());
-                showToast('Amount copied!');
-            });
+            const amountText = amount.toString();
+            copyToClipboard(amountText, 'Amount copied!');
         }
 
         function copyAddress() {
-            navigator.clipboard.writeText(order.walletAddress).then(() => {
-                showToast('Address copied!');
-            }).catch(() => {
-                // Fallback for older browsers
-                fallbackCopy(order.walletAddress);
-                showToast('Address copied!');
-            });
+            copyToClipboard(walletAddress, 'Address copied!');
+        }
+
+        function copyToClipboard(text, message) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(message);
+                }).catch(() => {
+                    fallbackCopy(text);
+                    showToast(message);
+                });
+            } else {
+                fallbackCopy(text);
+                showToast(message);
+            }
         }
 
         // Fallback copy function for older browsers
@@ -232,9 +249,15 @@
             textArea.value = text;
             textArea.style.position = 'fixed';
             textArea.style.left = '-9999px';
+            textArea.style.top = '-9999px';
             document.body.appendChild(textArea);
+            textArea.focus();
             textArea.select();
-            document.execCommand('copy');
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
             document.body.removeChild(textArea);
         }
 
@@ -255,9 +278,12 @@
         // Check payment status
         async function checkStatus() {
             try {
-                const status = await PaymentAPI.checkOrder(order.orderId);
+                const status = await PaymentAPI.checkOrder(orderId);
+                console.log('Status check result:', status);
                 
-                if (status.status === 'confirmed') {
+                const orderStatus = status.status || status.Status;
+                
+                if (orderStatus === 'confirmed') {
                     document.getElementById('statusMessage').innerHTML = `
                         <span class="status-icon">✅</span>
                         <span>Payment confirmed! Check your email for the activation key.</span>
@@ -269,7 +295,7 @@
                     setTimeout(() => {
                         window.location.href = 'status.html';
                     }, 2000);
-                } else if (status.status === 'expired') {
+                } else if (orderStatus === 'expired') {
                     document.getElementById('statusMessage').innerHTML = `
                         <span class="status-icon">❌</span>
                         <span>Order expired. Please create a new order.</span>
