@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeSync Pro - Order Status</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">📈</span>
+                <h1>TradeSync Pro</h1>
+            </div>
+        </header>
+
+        <!-- Status Content -->
+        <main class="main-content">
+            <div class="status-container">
+                <!-- Status Check Form -->
+                <div class="status-lookup" id="statusLookup">
+                    <h2 class="section-title">Check Order Status</h2>
+                    <p class="section-subtitle">Enter your order ID to check the status</p>
+                    
+                    <form id="statusForm" class="status-form">
+                        <div class="form-group">
+                            <input 
+                                type="text" 
+                                id="orderIdInput" 
+                                placeholder="Enter Order ID (e.g., TS-XXXXXXXX)"
+                                required
+                                pattern="TS-[A-Z0-9]{8}"
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary">Check Status</button>
+                    </form>
+                </div>
+
+                <!-- Status Result -->
+                <div class="status-result" id="statusResult" style="display: none;">
+                    <div id="statusIcon" class="status-icon-large"></div>
+                    <h2 id="statusTitle"></h2>
+                    <p id="statusMessage"></p>
+
+                    <div class="status-details" id="statusDetails">
+                        <!-- Details will be populated here -->
+                    </div>
+
+                    <div class="status-actions">
+                        <button class="btn btn-secondary" onclick="checkAnother()">Check Another Order</button>
+                        <a href="index.html" class="btn btn-primary">Purchase New License</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Need help? Contact: <a href="mailto:sardarali95@outlook.com">sardarali95@outlook.com</a></p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Check if coming from payment page with confirmed order
+        const orderStatus = JSON.parse(sessionStorage.getItem('orderStatus'));
+        if (orderStatus) {
+            sessionStorage.removeItem('orderStatus');
+            displayStatus(orderStatus);
+        }
+
+        // Pre-fill order ID if available
+        const currentOrder = JSON.parse(sessionStorage.getItem('currentOrder'));
+        if (currentOrder) {
+            document.getElementById('orderIdInput').value = currentOrder.orderId;
+        }
+
+        // Form submission
+        document.getElementById('statusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const orderId = document.getElementById('orderIdInput').value.trim().toUpperCase();
+            
+            try {
+                const status = await PaymentAPI.checkOrder(orderId);
+                displayStatus(status);
+            } catch (error) {
+                displayStatus({
+                    found: false,
+                    message: 'Order not found. Please check the Order ID.'
+                });
+            }
+        });
+
+        function displayStatus(status) {
+            document.getElementById('statusLookup').style.display = 'none';
+            document.getElementById('statusResult').style.display = 'block';
+
+            const iconEl = document.getElementById('statusIcon');
+            const titleEl = document.getElementById('statusTitle');
+            const messageEl = document.getElementById('statusMessage');
+            const detailsEl = document.getElementById('statusDetails');
+
+            if (!status.found) {
+                iconEl.innerHTML = '❓';
+                iconEl.className = 'status-icon-large not-found';
+                titleEl.textContent = 'Order Not Found';
+                messageEl.textContent = status.message || 'Please check your Order ID and try again.';
+                detailsEl.innerHTML = '';
+                return;
+            }
+
+            switch (status.status) {
+                case 'confirmed':
+                    iconEl.innerHTML = '✅';
+                    iconEl.className = 'status-icon-large confirmed';
+                    titleEl.textContent = 'Payment Confirmed!';
+                    messageEl.textContent = 'Your activation key has been sent to your email.';
+                    detailsEl.innerHTML = `
+                        <div class="detail-item">
+                            <span>Order ID:</span>
+                            <strong>${status.orderId}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Plan:</span>
+                            <strong>${status.subscriptionDays} Days License</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Amount Paid:</span>
+                            <strong>$${status.amount} USDT</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Confirmed At:</span>
+                            <strong>${new Date(status.confirmedAt).toLocaleString()}</strong>
+                        </div>
+                        <div class="info-box success">
+                            <p>📧 ${status.licenseKey || 'Check your email for the activation key!'}</p>
+                        </div>
+                    `;
+                    break;
+
+                case 'pending':
+                    iconEl.innerHTML = '⏳';
+                    iconEl.className = 'status-icon-large pending';
+                    titleEl.textContent = 'Awaiting Payment';
+                    messageEl.textContent = 'We have not received your payment yet.';
+                    detailsEl.innerHTML = `
+                        <div class="detail-item">
+                            <span>Order ID:</span>
+                            <strong>${status.orderId}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Amount Due:</span>
+                            <strong>$${status.amount} USDT</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Expires At:</span>
+                            <strong>${new Date(status.expiresAt).toLocaleString()}</strong>
+                        </div>
+                        <div class="info-box warning">
+                            <p>⚠️ Please complete your payment before the order expires.</p>
+                        </div>
+                    `;
+                    break;
+
+                case 'expired':
+                    iconEl.innerHTML = '❌';
+                    iconEl.className = 'status-icon-large expired';
+                    titleEl.textContent = 'Order Expired';
+                    messageEl.textContent = 'This order has expired. Please create a new order.';
+                    detailsEl.innerHTML = `
+                        <div class="detail-item">
+                            <span>Order ID:</span>
+                            <strong>${status.orderId}</strong>
+                        </div>
+                        <div class="info-box error">
+                            <p>This order expired at ${new Date(status.expiresAt).toLocaleString()}</p>
+                        </div>
+                    `;
+                    break;
+
+                case 'cancelled':
+                    iconEl.innerHTML = '🚫';
+                    iconEl.className = 'status-icon-large cancelled';
+                    titleEl.textContent = 'Order Cancelled';
+                    messageEl.textContent = 'This order was cancelled.';
+                    detailsEl.innerHTML = '';
+                    break;
+
+                default:
+                    iconEl.innerHTML = '❓';
+                    iconEl.className = 'status-icon-large unknown';
+                    titleEl.textContent = 'Unknown Status';
+                    messageEl.textContent = 'Please contact support.';
+                    detailsEl.innerHTML = '';
+            }
+        }
+
+        function checkAnother() {
+            document.getElementById('statusLookup').style.display = 'block';
+            document.getElementById('statusResult').style.display = 'none';
+            document.getElementById('orderIdInput').value = '';
+        }
+    </script>
+</body>
+</html>
