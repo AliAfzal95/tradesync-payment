@@ -6,8 +6,8 @@
     <title>TradeSync Pro - Complete Payment</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- QR Code Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- QR Code Library - Using a more reliable CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -62,7 +62,7 @@
                             <span id="paymentAmount">-</span>
                             <span class="amount-currency">USDT</span>
                         </div>
-                        <button class="copy-btn" onclick="copyAmount()">📋 Copy</button>
+                        <button class="copy-btn" onclick="copyAmount()">📋 Copy Amount</button>
                     </div>
 
                     <div class="network-badge" id="networkBadge">
@@ -134,16 +134,41 @@
         `;
         document.getElementById('networkWarning').textContent = `USDT-${order.paymentNetwork}`;
 
-        // Generate QR Code
-        QRCode.toCanvas(document.createElement('canvas'), order.walletAddress, { 
-            width: 200,
-            margin: 2,
-            color: { dark: '#000000', light: '#ffffff' }
-        }, (error, canvas) => {
-            if (!error) {
-                document.getElementById('qrCode').appendChild(canvas);
+        // Generate QR Code using qrcodejs library
+        function generateQRCode() {
+            const qrContainer = document.getElementById('qrCode');
+            qrContainer.innerHTML = ''; // Clear any existing content
+            
+            try {
+                // Create QR code with the wallet address
+                new QRCode(qrContainer, {
+                    text: order.walletAddress,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                console.log('QR Code generated successfully for:', order.walletAddress);
+            } catch (error) {
+                console.error('QR Code generation failed:', error);
+                // Fallback: Show address as text if QR fails
+                qrContainer.innerHTML = `
+                    <div style="padding: 20px; background: #fee2e2; border-radius: 8px; color: #991b1b;">
+                        <p>QR Code unavailable</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Please copy the wallet address below</p>
+                    </div>
+                `;
             }
-        });
+        }
+
+        // Generate QR code after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', generateQRCode);
+        } else {
+            // Small delay to ensure the library is loaded
+            setTimeout(generateQRCode, 100);
+        }
 
         // Countdown timer
         let expiresAt = new Date(order.expiresAt);
@@ -182,16 +207,44 @@
 
         // Copy functions
         function copyAmount() {
-            navigator.clipboard.writeText(order.amount.toString());
-            showToast('Amount copied!');
+            navigator.clipboard.writeText(order.amount.toString()).then(() => {
+                showToast('Amount copied!');
+            }).catch(() => {
+                // Fallback for older browsers
+                fallbackCopy(order.amount.toString());
+                showToast('Amount copied!');
+            });
         }
 
         function copyAddress() {
-            navigator.clipboard.writeText(order.walletAddress);
-            showToast('Address copied!');
+            navigator.clipboard.writeText(order.walletAddress).then(() => {
+                showToast('Address copied!');
+            }).catch(() => {
+                // Fallback for older browsers
+                fallbackCopy(order.walletAddress);
+                showToast('Address copied!');
+            });
+        }
+
+        // Fallback copy function for older browsers
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
         }
 
         function showToast(message) {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.textContent = message;
@@ -222,9 +275,13 @@
                         <span>Order expired. Please create a new order.</span>
                     `;
                     document.getElementById('statusMessage').className = 'status-expired';
+                } else {
+                    // Still pending
+                    showToast('Still waiting for payment...');
                 }
             } catch (error) {
                 console.error('Status check failed:', error);
+                showToast('Could not check status. Try again.');
             }
         }
     </script>
