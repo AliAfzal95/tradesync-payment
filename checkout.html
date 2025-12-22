@@ -16,25 +16,14 @@
             </div>
         </header>
 
-        <!-- Progress Steps -->
         <div class="progress-bar">
-            <div class="step completed">
-                <div class="step-number">✓</div>
-                <span>Select Plan</span>
-            </div>
-            <div class="step active">
-                <div class="step-number">2</div>
-                <span>Your Details</span>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <span>Payment</span>
-            </div>
+            <div class="step completed"><div class="step-number">✓</div><span>Select Plan</span></div>
+            <div class="step active"><div class="step-number">2</div><span>Your Details</span></div>
+            <div class="step"><div class="step-number">3</div><span>Payment</span></div>
         </div>
 
         <main class="main-content">
             <div class="checkout-container">
-                <!-- Order Summary -->
                 <div class="order-summary">
                     <h3>Order Summary</h3>
                     <div class="summary-item">
@@ -43,26 +32,44 @@
                     </div>
                     <div class="summary-item total">
                         <span>Total:</span>
-                        <span id="planPrice">$-</span>
+                        <span id="planPrice">$- USDT</span>
                     </div>
                 </div>
 
-                <!-- Customer Details Form -->
                 <div class="checkout-form">
                     <h2>Enter Your Details</h2>
                     <form id="checkoutForm">
                         <div class="form-group">
                             <label for="userName">Full Name *</label>
-                            <input type="text" id="userName" name="userName" required 
+                            <input type="text" id="userName" name="userName" required
                                    placeholder="Enter your full name" minlength="2">
                         </div>
                         <div class="form-group">
                             <label for="userEmail">Email Address *</label>
-                            <input type="email" id="userEmail" name="userEmail" required 
+                            <input type="email" id="userEmail" name="userEmail" required
                                    placeholder="your@email.com">
                             <small>Your activation key will be sent to this email</small>
                         </div>
-                        
+                        <div class="form-group">
+                            <label>Payment Network *</label>
+                            <div class="network-options">
+                                <label class="network-option selected">
+                                    <input type="radio" name="network" value="TRC20" checked>
+                                    <span class="network-label">
+                                        <strong>🔷 TRC20 (Tron)</strong>
+                                        <small>Lower fees (~$0.15)</small>
+                                    </span>
+                                </label>
+                                <label class="network-option">
+                                    <input type="radio" name="network" value="BEP20">
+                                    <span class="network-label">
+                                        <strong>🟡 BEP20 (BSC)</strong>
+                                        <small>Fast (~$0.30 fee)</small>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="form-actions">
                             <a href="index.html" class="btn btn-secondary">← Back</a>
                             <button type="submit" class="btn btn-primary" id="proceedBtn">
@@ -72,7 +79,6 @@
                     </form>
                 </div>
 
-                <!-- Loading overlay -->
                 <div class="loading-overlay" id="loadingOverlay" style="display: none;">
                     <div class="spinner"></div>
                     <p>Creating your order...</p>
@@ -81,14 +87,13 @@
         </main>
 
         <footer class="footer">
-            <p>🔒 Secure crypto payment via NOWPayments</p>
+            <p>🔒 Direct USDT payment - No third-party fees</p>
         </footer>
     </div>
 
     <script src="js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Get selected plan from session
             const planData = sessionStorage.getItem('selectedPlan');
             if (!planData) {
                 window.location.href = 'index.html';
@@ -97,17 +102,25 @@
 
             const plan = JSON.parse(planData);
             document.getElementById('planDays').textContent = `${plan.days} Days License`;
-            document.getElementById('planPrice').textContent = `$${plan.price} USD`;
+            document.getElementById('planPrice').textContent = `$${plan.price} USDT`;
+
+            // Network selection highlight
+            document.querySelectorAll('.network-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.network-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                });
+            });
         });
 
         document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const plan = JSON.parse(sessionStorage.getItem('selectedPlan'));
             const userName = document.getElementById('userName').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
+            const network = document.querySelector('input[name="network"]:checked').value;
 
-            // Show loading
             document.getElementById('loadingOverlay').style.display = 'flex';
             document.getElementById('proceedBtn').disabled = true;
 
@@ -115,18 +128,21 @@
                 const response = await PaymentAPI.createOrder({
                     userName,
                     userEmail,
-                    subscriptionDays: plan.days
+                    subscriptionDays: plan.days,
+                    network
                 });
 
-                if (response.success && response.paymentUrl) {
-                    // Store order info for status page
+                if (response.success) {
                     sessionStorage.setItem('currentOrder', JSON.stringify({
                         orderId: response.orderId,
+                        amount: response.amount,
+                        walletAddress: response.walletAddress,
+                        network: response.network,
+                        expiresAt: response.expiresAt,
                         email: userEmail
                     }));
-                    
-                    // Redirect to NOWPayments checkout
-                    window.location.href = response.paymentUrl;
+
+                    window.location.href = 'payment.html';
                 } else {
                     throw new Error(response.message || 'Failed to create order');
                 }
