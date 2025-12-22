@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeSync Pro - Complete Payment</title>
+    <title>Complete Payment - TradeSync Pro</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">
                 <span class="logo-icon">📈</span>
@@ -17,97 +16,76 @@
             </div>
         </header>
 
-        <!-- Progress Steps -->
         <div class="progress-bar">
-            <div class="step completed">
-                <div class="step-number">✓</div>
-                <span>Select Plan</span>
-            </div>
-            <div class="step completed">
-                <div class="step-number">✓</div>
-                <span>Your Details</span>
-            </div>
-            <div class="step active">
-                <div class="step-number">3</div>
-                <span>Payment</span>
-            </div>
+            <div class="step completed"><div class="step-number">✓</div><span>Select Plan</span></div>
+            <div class="step completed"><div class="step-number">✓</div><span>Your Details</span></div>
+            <div class="step active"><div class="step-number">3</div><span>Payment</span></div>
         </div>
 
-        <!-- Payment Details -->
         <main class="main-content">
             <div class="payment-container">
-                <!-- Timer -->
                 <div class="timer-box">
                     <span class="timer-icon">⏰</span>
                     <span>Order expires in: </span>
-                    <span id="countdown" class="countdown">30:00</span>
+                    <span id="countdown" class="countdown">60:00</span>
                 </div>
 
-                <!-- Order Info -->
                 <div class="order-info-box">
-                    <div class="order-id">
-                        Order ID: <strong id="orderId">-</strong>
-                    </div>
+                    <div class="order-id">Order ID: <strong id="orderId">-</strong></div>
                 </div>
 
-                <!-- Payment Instructions -->
                 <div class="payment-section">
-                    <h2 class="section-title">Send Payment</h2>
-                    
+                    <h2 class="section-title">Send USDT Payment</h2>
+
                     <div class="amount-display">
                         <span class="amount-label">Send exactly:</span>
                         <div class="amount-value">
                             <span id="paymentAmount">-</span>
                             <span class="amount-currency">USDT</span>
                         </div>
-                        <button class="copy-btn" onclick="copyAmount()">📋 Copy Amount</button>
+                        <button class="copy-btn" onclick="copyAmount()">📋 Copy</button>
                     </div>
 
                     <div class="network-badge" id="networkBadge">
-                        <!-- Network will be displayed here -->
+                        <span class="badge trc20">TRC20</span>
                     </div>
 
-                    <!-- QR Code - Using Google Charts API (most reliable) -->
                     <div class="qr-container">
                         <img id="qrCodeImage" alt="QR Code" style="width: 200px; height: 200px;">
                         <p class="qr-hint">Scan with your wallet app</p>
                     </div>
 
-                    <!-- Wallet Address -->
                     <div class="wallet-address-box">
-                        <label>Wallet Address:</label>
+                        <label>Wallet Address (<span id="networkLabel">TRC20</span>):</label>
                         <div class="address-container">
                             <code id="walletAddress">-</code>
                             <button class="copy-btn" onclick="copyAddress()">📋 Copy</button>
                         </div>
                     </div>
 
-                    <!-- Important Notes -->
                     <div class="warning-box">
                         <h4>⚠️ Important:</h4>
                         <ul>
-                            <li>Send <strong>exactly</strong> the amount shown above</li>
-                            <li>Use only <strong id="networkWarning">-</strong> network</li>
-                            <li>Payment must be received within 30 minutes</li>
+                            <li>Send <strong>exactly</strong> <span id="exactAmount">-</span> USDT</li>
+                            <li>Use only <strong id="networkWarning">USDT-TRC20</strong> network</li>
+                            <li>Payment is auto-detected within 1-2 minutes</li>
                             <li>Your activation key will be emailed after confirmation</li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Status Check -->
                 <div class="status-section">
                     <div id="statusMessage" class="status-pending">
                         <span class="status-icon">⏳</span>
                         <span>Waiting for payment...</span>
                     </div>
-                    <button class="btn btn-secondary" onclick="checkStatus()">
-                        🔄 Check Payment Status
+                    <button class="btn btn-secondary" onclick="checkPayment()" id="checkBtn">
+                        🔍 Check Payment Status
                     </button>
                 </div>
 
-                <!-- Support -->
                 <div class="support-box">
-                    <p>Need help? Save your Order ID: <strong id="orderIdCopy">-</strong></p>
+                    <p>Save your Order ID: <strong id="orderIdCopy">-</strong></p>
                     <p>Contact: <a href="mailto:sardarali95@outlook.com">sardarali95@outlook.com</a></p>
                 </div>
             </div>
@@ -116,77 +94,35 @@
 
     <script src="js/app.js"></script>
     <script>
-        // Debug: Log what's in sessionStorage
-        console.log('Session storage currentOrder:', sessionStorage.getItem('currentOrder'));
-        
-        // Get order from session
         const orderData = sessionStorage.getItem('currentOrder');
         if (!orderData) {
-            console.error('No order data found in session storage');
             alert('No order found. Redirecting to home page.');
             window.location.href = 'index.html';
         }
 
-        let order;
-        try {
-            order = JSON.parse(orderData);
-            console.log('Parsed order:', order);
-        } catch (e) {
-            console.error('Failed to parse order data:', e);
-            window.location.href = 'index.html';
-        }
-
-        // Get values with fallbacks for different naming conventions
-        const orderId = order.orderId || order.OrderId || '-';
-        const amount = order.amount || order.Amount || order.uniqueAmount || order.UniqueAmount || '-';
-        const walletAddress = order.walletAddress || order.WalletAddress || '-';
-        const network = order.paymentNetwork || order.PaymentNetwork || 'TRC20';
-        const expiresAt = order.expiresAt || order.ExpiresAt;
-
-        console.log('Order details:', { orderId, amount, walletAddress, network, expiresAt });
+        const order = JSON.parse(orderData);
+        const orderId = order.orderId;
+        const amount = order.amount;
+        const walletAddress = order.walletAddress;
+        const network = order.network || 'TRC20';
+        const expiresAt = order.expiresAt;
 
         // Display order details
         document.getElementById('orderId').textContent = orderId;
         document.getElementById('orderIdCopy').textContent = orderId;
         document.getElementById('paymentAmount').textContent = amount;
+        document.getElementById('exactAmount').textContent = amount;
         document.getElementById('walletAddress').textContent = walletAddress;
-        document.getElementById('networkBadge').innerHTML = `
-            <span class="badge ${network.toLowerCase()}">${network}</span>
-        `;
+        document.getElementById('networkLabel').textContent = network;
         document.getElementById('networkWarning').textContent = `USDT-${network}`;
+        document.getElementById('networkBadge').innerHTML = `<span class="badge ${network.toLowerCase()}">${network}</span>`;
 
-        // Generate QR Code using Google Charts API (most reliable, no library needed)
-        function generateQRCode() {
-            if (walletAddress && walletAddress !== '-') {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(walletAddress)}`;
-                const qrImage = document.getElementById('qrCodeImage');
-                qrImage.src = qrUrl;
-                qrImage.onerror = function() {
-                    // Fallback to another QR service
-                    this.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(walletAddress)}&choe=UTF-8`;
-                    this.onerror = function() {
-                        // If both fail, show message
-                        this.style.display = 'none';
-                        this.parentElement.innerHTML = `
-                            <div style="padding: 20px; background: #f3f4f6; border-radius: 8px;">
-                                <p style="color: #6b7280;">QR Code unavailable</p>
-                                <p style="font-size: 12px; color: #9ca3af;">Please copy the wallet address below</p>
-                            </div>
-                        `;
-                    };
-                };
-                console.log('QR Code URL:', qrUrl);
-            } else {
-                console.error('No wallet address for QR code');
-            }
-        }
-
-        // Generate QR code
-        generateQRCode();
+        // Generate QR Code
+        generateQRCode('qrCodeImage', walletAddress, 200);
 
         // Countdown timer
-        let expiresAtDate = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 30 * 60 * 1000);
-        
+        let expiresAtDate = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 60 * 60 * 1000);
+
         function updateCountdown() {
             const now = new Date();
             const diff = expiresAtDate - now;
@@ -195,19 +131,18 @@
                 document.getElementById('countdown').textContent = 'EXPIRED';
                 document.getElementById('countdown').classList.add('expired');
                 document.getElementById('statusMessage').innerHTML = `
-                    <span class="status-icon">❌</span>
-                    <span>Order expired. Please create a new order.</span>
-                `;
+                        <span class="status-icon">❌</span>
+                        <span>Order expired. Please create a new order.</span>
+                    `;
                 document.getElementById('statusMessage').className = 'status-expired';
                 return;
             }
 
             const minutes = Math.floor(diff / 60000);
             const seconds = Math.floor((diff % 60000) / 1000);
-            document.getElementById('countdown').textContent = 
+            document.getElementById('countdown').textContent =
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-            // Warning when less than 5 minutes
             if (minutes < 5) {
                 document.getElementById('countdown').classList.add('warning');
             }
@@ -216,98 +151,67 @@
         updateCountdown();
         setInterval(updateCountdown, 1000);
 
-        // Auto-check status every 30 seconds
-        setInterval(checkStatus, 30000);
+        // Auto-check payment every 30 seconds
+        setInterval(checkPayment, 30000);
 
-        // Copy functions
         function copyAmount() {
-            const amountText = amount.toString();
-            copyToClipboard(amountText, 'Amount copied!');
+            copyToClipboard(amount.toString(), 'Amount copied!');
         }
 
         function copyAddress() {
             copyToClipboard(walletAddress, 'Address copied!');
         }
 
-        function copyToClipboard(text, message) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast(message);
-                }).catch(() => {
-                    fallbackCopy(text);
-                    showToast(message);
-                });
-            } else {
-                fallbackCopy(text);
-                showToast(message);
-            }
-        }
+        async function checkPayment() {
+            const btn = document.getElementById('checkBtn');
+            btn.disabled = true;
+            btn.textContent = '🔄 Checking...';
 
-        // Fallback copy function for older browsers
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            textArea.style.top = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
             try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('Fallback copy failed:', err);
-            }
-            document.body.removeChild(textArea);
-        }
+                // First try to verify payment on blockchain
+                const verifyResult = await PaymentAPI.verifyPayment(orderId);
 
-        function showToast(message) {
-            // Remove existing toast if any
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
-        }
-
-        // Check payment status
-        async function checkStatus() {
-            try {
-                const status = await PaymentAPI.checkOrder(orderId);
-                console.log('Status check result:', status);
-                
-                const orderStatus = status.status || status.Status;
-                
-                if (orderStatus === 'confirmed') {
+                if (verifyResult.found) {
                     document.getElementById('statusMessage').innerHTML = `
-                        <span class="status-icon">✅</span>
-                        <span>Payment confirmed! Check your email for the activation key.</span>
-                    `;
+                            <span class="status-icon">✅</span>
+                            <span>Payment confirmed! Check your email for the activation key.</span>
+                        `;
                     document.getElementById('statusMessage').className = 'status-confirmed';
-                    
-                    // Redirect to success page
-                    sessionStorage.setItem('orderStatus', JSON.stringify(status));
+
+                    sessionStorage.setItem('orderConfirmed', 'true');
                     setTimeout(() => {
-                        window.location.href = 'status.html';
+                        window.location.href = `status.html?orderId=${orderId}`;
                     }, 2000);
-                } else if (orderStatus === 'expired') {
+                    return;
+                }
+
+                // Check order status
+                const status = await PaymentAPI.checkOrder(orderId);
+
+                if (status.status === 'confirmed') {
                     document.getElementById('statusMessage').innerHTML = `
-                        <span class="status-icon">❌</span>
-                        <span>Order expired. Please create a new order.</span>
-                    `;
+                            <span class="status-icon">✅</span>
+                            <span>Payment confirmed! Check your email.</span>
+                        `;
+                    document.getElementById('statusMessage').className = 'status-confirmed';
+                    setTimeout(() => {
+                        window.location.href = `status.html?orderId=${orderId}`;
+                    }, 2000);
+                } else if (status.status === 'expired') {
+                    document.getElementById('statusMessage').innerHTML = `
+                            <span class="status-icon">❌</span>
+                            <span>Order expired. Please create a new order.</span>
+                        `;
                     document.getElementById('statusMessage').className = 'status-expired';
                 } else {
-                    // Still pending
                     showToast('Still waiting for payment...');
                 }
             } catch (error) {
-                console.error('Status check failed:', error);
+                console.error('Check failed:', error);
                 showToast('Could not check status. Try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Check Payment Status';
             }
         }
     </script>
