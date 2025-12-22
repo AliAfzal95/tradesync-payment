@@ -1,5 +1,6 @@
 /* ====================================
    TradeSync Pro Payment Page Styles
+   Version 5.0 - Direct Blockchain Payments
    ==================================== */
 
 :root {
@@ -267,6 +268,15 @@ body {
     margin: 0 auto;
 }
 
+.checkout-form {
+    margin-top: 1rem;
+}
+
+.checkout-form h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
 .order-summary {
     background: var(--bg-color);
     border-radius: 0.75rem;
@@ -303,11 +313,19 @@ body {
     font-weight: 500;
 }
 
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
 .required {
     color: var(--error-color);
 }
 
-.form-group input {
+.form-group input[type="text"],
+.form-group input[type="email"] {
     width: 100%;
     padding: 0.875rem 1rem;
     border: 2px solid var(--border-color);
@@ -328,15 +346,51 @@ body {
     color: var(--text-light);
 }
 
-/* Network Options */
+/* Network Options - Updated for Direct Payment */
 .network-options {
     display: grid;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 0.75rem;
 }
 
-.network-option input {
+.network-option {
+    display: block;
+    cursor: pointer;
+}
+
+.network-option input[type="radio"] {
     display: none;
+}
+
+.network-label {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.network-label strong {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.network-label small {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.network-option:hover .network-label {
+    border-color: var(--primary-color);
+    background: #f8faff;
+}
+
+.network-option input[type="radio"]:checked + .network-label,
+.network-option.selected .network-label {
+    border-color: var(--primary-color);
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .network-card {
@@ -411,10 +465,16 @@ body {
 
 .countdown.warning {
     color: var(--error-color);
+    animation: pulse 1s infinite;
 }
 
 .countdown.expired {
     color: var(--error-color);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .order-info-box {
@@ -425,6 +485,11 @@ body {
 .order-id {
     font-size: 0.875rem;
     color: var(--text-light);
+}
+
+.order-id strong {
+    color: var(--text-color);
+    font-family: monospace;
 }
 
 .payment-section {
@@ -453,6 +518,7 @@ body {
 .amount-currency {
     font-size: 1.25rem;
     opacity: 0.9;
+    margin-left: 0.25rem;
 }
 
 .amount-display .copy-btn {
@@ -463,6 +529,11 @@ body {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     cursor: pointer;
+    transition: background 0.2s;
+}
+
+.amount-display .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .network-badge {
@@ -496,6 +567,11 @@ body {
     box-shadow: var(--shadow);
 }
 
+.qr-container img {
+    display: block;
+    margin: 0 auto;
+}
+
 .qr-hint {
     margin-top: 0.75rem;
     font-size: 0.875rem;
@@ -527,9 +603,11 @@ body {
     background: white;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     word-break: break-all;
     border: 1px solid var(--border-color);
+    font-family: 'Courier New', monospace;
+    text-align: left;
 }
 
 .copy-btn {
@@ -541,6 +619,7 @@ body {
     cursor: pointer;
     font-size: 0.875rem;
     white-space: nowrap;
+    transition: background 0.2s;
 }
 
 .copy-btn:hover {
@@ -562,13 +641,13 @@ body {
 }
 
 .warning-box ul {
-    margin-left: 1rem;
+    margin-left: 1.25rem;
     font-size: 0.875rem;
     color: #78350f;
 }
 
 .warning-box li {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
 }
 
 .status-section {
@@ -579,7 +658,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.status-pending, .status-confirmed, .status-expired {
+.status-pending, .status-confirmed, .status-expired, .status-error {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -599,7 +678,7 @@ body {
     color: #065f46;
 }
 
-.status-expired {
+.status-expired, .status-error {
     background: #fee2e2;
     color: #991b1b;
 }
@@ -612,6 +691,13 @@ body {
     text-align: center;
     font-size: 0.875rem;
     color: var(--text-light);
+    padding: 1rem;
+    background: var(--bg-color);
+    border-radius: 0.5rem;
+}
+
+.support-box p {
+    margin: 0.25rem 0;
 }
 
 .support-box a {
@@ -624,82 +710,74 @@ body {
     margin: 0 auto;
 }
 
-.status-form {
-    display: flex;
-    gap: 1rem;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.status-form input {
-    flex: 1;
-    padding: 0.875rem 1rem;
-    border: 2px solid var(--border-color);
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    text-transform: uppercase;
-}
-
-.status-result {
+.status-card {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2.5rem;
     text-align: center;
-    padding: 2rem 0;
+}
+
+.status-card h2 {
+    margin-bottom: 0.5rem;
+}
+
+.status-message {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
 }
 
 .status-icon-large {
     font-size: 4rem;
     margin-bottom: 1rem;
+    display: block;
 }
 
-.status-icon-large.confirmed { color: var(--success-color); }
-.status-icon-large.pending { color: var(--warning-color); }
-.status-icon-large.expired, .status-icon-large.cancelled { color: var(--error-color); }
+.status-success { border: 2px solid var(--success-color); }
+.status-pending { border: 2px solid var(--warning-color); }
+.status-error { border: 2px solid var(--error-color); }
+.status-expired { border: 2px solid var(--text-light); }
 
-.status-details {
+.order-details {
     background: var(--bg-color);
     border-radius: 0.75rem;
-    padding: 1.5rem;
+    padding: 1.25rem;
     margin: 1.5rem 0;
     text-align: left;
 }
 
-.detail-item {
+.detail-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.75rem 0;
+    padding: 0.6rem 0;
     border-bottom: 1px solid var(--border-color);
 }
 
-.detail-item:last-child {
+.detail-row:last-child {
     border-bottom: none;
 }
 
-.info-box {
-    margin-top: 1rem;
+.detail-row span {
+    color: var(--text-light);
+}
+
+.detail-row strong {
+    color: var(--text-color);
+}
+
+.success-actions, .error-actions, .pending-note {
+    margin-top: 1.5rem;
+}
+
+.pending-note {
     padding: 1rem;
-    border-radius: 0.5rem;
-    text-align: center;
-}
-
-.info-box.success {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.info-box.warning {
     background: #fef3c7;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
     color: #92400e;
 }
 
-.info-box.error {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.status-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
+.pending-note p {
+    margin-bottom: 1rem;
 }
 
 /* Footer */
@@ -715,10 +793,39 @@ body {
     opacity: 0.7;
 }
 
+.footer a {
+    color: white;
+}
+
 /* Loading & Toast */
 .loading {
     text-align: center;
     padding: 3rem;
+}
+
+.loading p {
+    color: var(--text-light);
+    margin-top: 1rem;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    color: white;
+}
+
+.loading-overlay p {
+    margin-top: 1rem;
+    font-size: 1rem;
 }
 
 .spinner {
@@ -728,17 +835,12 @@ body {
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
+    margin: 0 auto;
 }
 
-.spinner-small {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+.loading-overlay .spinner {
+    border-color: rgba(255, 255, 255, 0.2);
     border-top-color: white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -756,6 +858,7 @@ body {
     border-radius: 0.5rem;
     animation: fadeInUp 0.3s ease;
     z-index: 1000;
+    box-shadow: var(--shadow-lg);
 }
 
 @keyframes fadeInUp {
@@ -793,8 +896,8 @@ body {
         flex-direction: column;
     }
 
-    .status-form {
-        flex-direction: column;
+    .form-actions .btn {
+        width: 100%;
     }
 
     .progress-bar {
@@ -805,76 +908,21 @@ body {
         display: none;
     }
 
-}
+    .amount-value {
+        font-size: 2rem;
+    }
 
+    .address-container {
+        flex-direction: column;
+    }
 
-/* Add to your existing style.css */
+    .address-container code {
+        width: 100%;
+    }
 
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    color: white;
-}
-
-.status-container {
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.status-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 40px;
-    text-align: center;
-}
-
-.status-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-}
-
-.status-success { border: 2px solid #10b981; }
-.status-pending { border: 2px solid #f59e0b; }
-.status-error { border: 2px solid #ef4444; }
-.status-expired { border: 2px solid #6b7280; }
-
-.order-details {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.detail-row:last-child {
-    border-bottom: none;
-}
-
-.pending-note {
-    margin-top: 20px;
-    padding: 10px;
-    background: rgba(245, 158, 11, 0.1);
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.success-actions, .error-actions {
-    margin-top: 30px;
+    .address-container .copy-btn {
+        width: 100%;
+    }
 }
 
 
