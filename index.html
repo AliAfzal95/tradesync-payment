@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">
                 <span class="logo-icon">📈</span>
@@ -19,7 +18,6 @@
             <p class="tagline">Professional Trade Copying Software</p>
         </header>
 
-        <!-- Progress Steps -->
         <div class="progress-bar">
             <div class="step active">
                 <div class="step-number">1</div>
@@ -35,7 +33,6 @@
             </div>
         </div>
 
-        <!-- Plan Selection -->
         <main class="main-content">
             <h2 class="section-title">Choose Your License Plan</h2>
             <p class="section-subtitle">Select the subscription duration that works best for you</p>
@@ -48,10 +45,9 @@
             </div>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
-            <p>🔒 Secure crypto payment via NOWPayments</p>
-            <p class="footer-note">Pay with USDT (TRC20/BEP20) • Activation key will be sent to your email after payment confirmation</p>
+            <p>🔒 Direct USDT Payment - No Third-Party Fees</p>
+            <p class="footer-note">Pay with USDT (TRC20 or BEP20) • Activation key sent to your email</p>
         </footer>
     </div>
 
@@ -60,48 +56,41 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const info = await PaymentAPI.getPaymentInfo();
-                console.log('API Response:', info); // Debug log
                 renderPlans(info.plans);
             } catch (error) {
-                console.error('Error loading plans:', error);
                 document.getElementById('plansContainer').innerHTML = `
-                    <div class="error-message">
-                        <p>❌ Failed to load plans. Please refresh the page.</p>
-                        <p style="font-size: 12px; color: #666;">${error.message}</p>
-                    </div>
-                `;
+                        <div class="error-message">
+                            <p>❌ Failed to load plans. Please refresh the page.</p>
+                        </div>
+                    `;
             }
         });
 
         function renderPlans(plans) {
             const container = document.getElementById('plansContainer');
-            
-            // Handle both uppercase (Days, Price) and lowercase (days, price)
+
             const plansHTML = plans.map((plan) => {
-                const days = plan.days || plan.Days;
-                const price = plan.price || plan.Price;
-                const isPopular = days === 30;
-                
+                const isPopular = plan.days === 30;
                 return `
-                    <div class="plan-card ${isPopular ? 'popular' : ''}" onclick="selectPlan(${days}, ${price})">
-                        ${isPopular ? '<div class="popular-badge">Most Popular</div>' : ''}
-                        <div class="plan-duration">${days} Days</div>
-                        <div class="plan-price">
-                            <span class="currency">$</span>
-                            <span class="amount">${price}</span>
-                            <span class="unit">USD</span>
+                        <div class="plan-card ${isPopular ? 'popular' : ''}" onclick="selectPlan(${plan.days}, ${plan.price})">
+                            ${isPopular ? '<div class="popular-badge">Most Popular</div>' : ''}
+                            <div class="plan-duration">${plan.days} Days</div>
+                            <div class="plan-price">
+                                <span class="currency">$</span>
+                                <span class="amount">${plan.price}</span>
+                                <span class="unit">USDT</span>
+                            </div>
+                            <div class="plan-perday">$${(plan.price / plan.days).toFixed(2)}/day</div>
+                            <ul class="plan-features">
+                                <li>✓ Full Software Access</li>
+                                <li>✓ Unlimited Trade Copying</li>
+                                <li>✓ Email Support</li>
+                                ${plan.days >= 20 ? '<li>✓ Priority Support</li>' : ''}
+                                ${plan.days >= 30 ? '<li>✓ Best Value</li>' : ''}
+                            </ul>
+                            <button class="btn btn-primary">Select Plan</button>
                         </div>
-                        <div class="plan-perday">$${(price / days).toFixed(2)}/day</div>
-                        <ul class="plan-features">
-                            <li>✓ Full Software Access</li>
-                            <li>✓ Unlimited Trade Copying</li>
-                            <li>✓ Email Support</li>
-                            ${days >= 20 ? '<li>✓ Priority Support</li>' : ''}
-                            ${days >= 30 ? '<li>✓ Best Value</li>' : ''}
-                        </ul>
-                        <button class="btn btn-primary">Select Plan</button>
-                    </div>
-                `;
+                    `;
             }).join('');
 
             container.innerHTML = plansHTML;
