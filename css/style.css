@@ -926,3 +926,28 @@ body {
 }
 
 
+/* Add these styles for disabled BEP20 option */
+.network-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f0f0f0;
+    border-color: #ddd;
+}
+
+    .network-option.disabled:hover {
+        border-color: #ddd;
+        transform: none;
+    }
+
+    .network-option.disabled input {
+        cursor: not-allowed;
+    }
+
+.network-note {
+    display: block;
+    margin-top: 8px;
+    color: #666;
+    font-size: 12px;
+}
+
+
