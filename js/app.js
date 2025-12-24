@@ -13,6 +13,8 @@ const PaymentAPI = {
     },
 
     async createOrder(data) {
+        data.network = 'TRC20';
+
         const response = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
